@@ -5,14 +5,15 @@ import time
 import copy
 	
 import numpy as np
-
+from team25_minmax_numpy import Team25_minimax_numpy
+from team25_minmax import Team25_minimax
 
 TIME = 16
 MAX_PTS = 68
 # N = 4
 
 
-DEPTH = 30
+# DEPTH = 5
 TURN_RAND_STOP = 50 # Stop random moves after move 50
 # For min max with pruning 
 # turn depth num win lost draw
@@ -31,151 +32,6 @@ class TimedOutExc(Exception):
 def handler(signum, frame):
 	#print 'Signal handler called with signal', signum
 	raise TimedOutExc()
-
-class Team25_minimax():
-	# ply is the character x or o
-	def __init__(self,ply):
-		self.block_number = 0
-		self.ply = 1 if ply == 'x' else 0
-		self.board = ''
-		pass
-
-	def move(self, board, old_move, flag):
-		#You have to implement the move function with the same signature as this
-		#Find the list of valid cells allowed
-		possible_moves = board.find_valid_move_cells(old_move)
-		# print("Allowed moves:",possible_moves)
-		self.board = copy.deepcopy(board)
-		# print("Current Board state")
-		# self.board.print_board()
-		sub_move,move_value = self.min_max(old_move,self.ply,DEPTH)
-		# print("move:",sub_move,"value:",move_value)
-		return sub_move
-
-	def min_max(self, old_move,ply,depth,alpha = -10000,beta = 10000):		
-
-		bs = self.board 		
-		if(depth == 0):
-			return old_move, 0
-
-		# print("old move:",old_move)
-		possible_moves = bs.find_valid_move_cells(old_move)
-		if possible_moves == [] :
-			possible_moves = bs.find_valid_move_cells((-1,-1))
-		# possible_moves = possible_moves[0:16:4]
-		if possible_moves == []:
-			winner, message = bs.find_terminal_state()
-			# print("winner:",winner,"message:",message)
-			if message == 'WON':
-				return old_move,5*(DEPTH-depth)
-			elif message == 'DRAW':
-				return old_move, 0	
-			else: 
-				return old_move, 0
-		# print("possible:",possible_moves)
-		
-		sub_move = ''
-		sub_value = ''
-		block_won = 0
-
-		# print("Starting Loop")
-		if ply == 1:	
-			best_move = '' 
-			best_val = -10000
-			for move in possible_moves:
-				bs.board_status[move[0]][move[1]] = 'x'
-
-				winner, message = bs.find_terminal_state()
-				# print("winner:",winner,"message:",message)
-				if message == 'WON':
-					return move,5*(DEPTH-depth)
-
-				block_won = bs.check_block_status(old_move[0]/4,old_move[1]/4,'x')
-				# print("block_won:",block_won)
-				# bs.print_board()
-
-				if block_won == 1:
-					bs.block_status[move[0]/4][move[1]/4] = 'x'
-					sub_move,sub_value = self.min_max(move,ply,depth -1,alpha,beta)					
-					bs.block_status[move[0]/4][move[1]/4] = '-'
-					# Add the reward of winning a block 
-					sub_value += DEPTH - depth
-
-				elif block_won == 0:
-					bs.block_status[move[0]/4][move[1]/4] = 'd'
-					sub_move,sub_value = self.min_max(move,ply^1,depth -1,alpha,beta)					
-					bs.block_status[move[0]/4][move[1]/4] = '-'
-				
-				else:
-					sub_move,sub_value = self.min_max(move,ply^1,depth -1,alpha,beta)
-
-				# print("sub_move:",sub_move,"sub_value:",sub_value)
-				
-				# Alpha beta pruning 
-				if sub_value > best_val:
-					best_val = sub_value
-					best_move = move
-
-				alpha = max(alpha,best_val)
-
-				# print("alpha:",alpha,"beta",beta)
-				if(beta <= alpha):
-					break	
-
-
-				bs.board_status[move[0]][move[1]] = '-'
-
-			return best_move,best_val
-
-		else:
-			best_move = ''
-			best_val  = 10000
-			for move in possible_moves:
-				bs.board_status[move[0]][move[1]] = 'o'
-
-				# bs.print_board()
-				winner, message = bs.find_terminal_state()
-				if message == 'WON':
-					return move,-5*(DEPTH-depth)
-				# print("winner:",winner,"message:",message)
-
-				block_won = bs.check_block_status(old_move[0]/4,old_move[1]/4,'o')
-				# print("block_won:",block_won)	
-				if block_won == 1:
-					bs.block_status[move[0]/4][move[1]/4] = 'o'
-					sub_move,sub_value = self.min_max(move,ply,depth -1,alpha,beta)					
-					bs.block_status[move[0]/4][move[1]/4] = '-'
-					# Add the reward of winning a block 
-					sub_value += depth - DEPTH
-
-				elif block_won == 0:
-					bs.block_status[move[0]/4][move[1]/4] = 'd'
-					sub_move,sub_value = self.min_max(move,ply^1,depth -1,alpha,beta)					
-					bs.block_status[move[0]/4][move[1]/4] = '-'
-				
-				else:
-					sub_move,sub_value = self.min_max(move,ply^1,depth -1,alpha,beta)
-				# print("sub_move:",sub_move,"sub_value:",sub_value)
-
-				# Alpha beta pruning 
-				if sub_value < best_val:
-					best_val = sub_value
-					best_move = move
-
-				beta = min(beta,best_val)
-
-				# print("alpha:",alpha,"beta",beta)
-				if(beta <= alpha):
-					break	
-
-
-				bs.board_status[move[0]][move[1]] = '-'
-			# except Exception as e:
-			# 	print(possible_moves)
-			# 	print(e)
-			# 	exit() 		
-			return best_move,best_val
-
 
 class RandomPlayer():
 	# ply is the character x or o
@@ -303,12 +159,15 @@ class Board:
 			return False 
 		if (type(old_move[0]) is not int) or (type(old_move[1]) is not int) or (type(new_move[0]) is not int) or (type(new_move[1]) is not int):
 			return False
+		
 		if (old_move != (-1,-1)) and (old_move[0] < 0 or old_move[0] > 16 or old_move[1] < 0 or old_move[1] > 16):
 			return False
 		cells = self.find_valid_move_cells(old_move)
+
 		return new_move in cells
 
 	def update(self, old_move, new_move, ply):
+		
 		#updating the game board and block status as per the move that has been passed in the arguements
 		if(self.check_valid_move(old_move, new_move)) == False:
 			return 'UNSUCCESSFUL', False
@@ -380,20 +239,22 @@ def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 				p_move = saitama3.move(game_board, old_move, flg)
 			else:		
 				p_move = obj.move(game_board, old_move, flg)
+				# p1_move = saitama4.move(game_board, old_move, flg)
+				# print(p_move,p1_move)
 		except TimedOutExc:					#timeout error
 #			print e
 			WINNER = opp
 			MESSAGE = 'TIME OUT'
 			pts[opp] = MAX_PTS
 			return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], True, False,turn
-		except Exception as e:
-			exc_type, exc_obj, exc_tb = sys.exc_info()
-			print(exc_obj,exc_tb.tb_lineno)
-			WINNER = opp
-			MESSAGE = 'INVALID MOVE'
-			pts[opp] = MAX_PTS			
-			return old_move, WINNER, MESSAGE , pts["P1"], pts["P2"], False, False,turn
-		signal.alarm(0)
+		# except Exception as e:
+		# 	exc_type, exc_obj, exc_tb = sys.exc_info()
+		# 	print(exc_obj,exc_tb.tb_lineno)
+		# 	WINNER = opp
+		# 	MESSAGE = 'INVALID MOVE'
+		# 	pts[opp] = MAX_PTS			
+		# 	return old_move, WINNER, MESSAGE , pts["P1"], pts["P2"], False, False,turn
+		# signal.alarm(0)
 
 		#check if board is not modified and move returned is valid
 		if (game_board.block_status != temp_block_status) or (game_board.board_status != temp_board_status):
@@ -404,10 +265,12 @@ def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 
 		update_status, block_won = game_board.update(old_move, p_move, flg)
 		# print("move played : ",p_move)
+			
 		if update_status == 'UNSUCCESSFUL':
 			WINNER = opp
 			MESSAGE = 'INVALID MOVE'
 			pts[opp] = MAX_PTS
+			print("Update UNSUCCESSFUL")
 			exit()
 			return old_move, WINNER, MESSAGE, pts["P1"], pts["P2"], False, False,turn
 
@@ -449,7 +312,7 @@ def gameplay(obj1, obj2):				#game simulator
 			break
 
 		old_move = p_move
-		# game_board.print_board()
+		game_board.print_board()
 
 		if block_won:
 			# p1_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won = player_turn(game_board, old_move, obj1, "P1", "P2", fl1)
@@ -462,6 +325,9 @@ def gameplay(obj1, obj2):				#game simulator
 			print(turn, MESSAGE)
 			game_board.print_board()			
 
+		# break
+		# if turn > 5:
+		# 	break	
 		# #do the same thing for player 2
 		# p2_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won = player_turn(game_board, old_move, obj2, "P2", "P1", fl2)
 
@@ -548,13 +414,19 @@ if __name__ == '__main__':
 	option = sys.argv[1]	
 	if option == '1':
 		saitama1 = Team25_minimax('x')
+		# saitama4 = Team25_minimax('x')
+		saitama2 = RandomPlayer('o')
+		saitama3 = RandomPlayer('x')
+	elif option == '2':
+		saitama1 = Team25_minimax_numpy('x')
+		# saitama4 = Team25_minimax('x')
 		saitama2 = RandomPlayer('o')
 		saitama3 = RandomPlayer('x')
 
-	elif option == '2':
-		saitama1 = Team25_minimax('x')
-		saitama2 = Manual_Player()
 	elif option == '3':
+		saitama1 = Team25_minimax_numpy('x')
+		saitama2 = Manual_Player()
+	elif option == '4':
 		saitama1 = Manual_Player()
 		saitama2 = Manual_Player()
 	else:
