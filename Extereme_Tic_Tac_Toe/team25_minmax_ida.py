@@ -5,19 +5,19 @@ import time
 import copy
 	
 
-class Team25_minimax():
+class Team25_minimax_ida():
 	# ply is the character x or o
-	def __init__(self,ply,depth):
+	def __init__(self,ply):
 		self.block_number = 0
 		self.ply = 1 if ply == 'x' else 0
-		self.board = ''	
+		self.board = ''
 		self.turn = 2
-		self.depth = depth
 		pass
 
 	def move(self, board, old_move, flag):
 		#You have to implement the move function with the same signature as this
 		#Find the list of valid cells allowed
+		possible_moves = board.find_valid_move_cells(old_move)
 		# print("Allowed moves:",possible_moves)
 		self.board = copy.deepcopy(board)
 		# print("Current Board state")
@@ -25,10 +25,12 @@ class Team25_minimax():
 		
 		# IDA instead of DFS
 
-		# for i in range(1,self.turn):
-		sub_move,move_value = self.min_max(old_move,self.ply,self.depth)
-		print("move:",sub_move,"value:",move_value,"ply:",self.ply)
-		
+		for i in range(1,self.turn):
+			sub_move,move_value = self.min_max(old_move,self.ply,i)
+			print("move:",sub_move,"value:",move_value)
+			# threshold to cut off IDA
+			if self.ply*move_value >= 0:
+				break
 
 		self.turn += 2
 
@@ -38,7 +40,6 @@ class Team25_minimax():
 
 		bs = self.board 		
 		
-
 		# print("old move:",old_move)
 		possible_moves = bs.find_valid_move_cells(old_move)
 		if possible_moves == [] :
@@ -48,7 +49,8 @@ class Team25_minimax():
 			winner, message = bs.find_terminal_state()
 			# print("winner:",winner,"message:",message)
 			if message == 'WON':
-				return old_move,(1 if ply == 1 else -1) *5*(self.depth-depth)
+				print(ply)
+				return old_move,(1 if ply == 1 else -1) *5*(self.turn-depth)
 			elif message == 'DRAW':
 				return old_move, 0	
 			else: 
@@ -72,7 +74,7 @@ class Team25_minimax():
 				winner, message = bs.find_terminal_state()
 				# print("winner:",winner,"message:",message)
 				if message == 'WON':
-					return move,5*(self.depth-depth)
+					return move,5*(self.turn-depth)
 				elif message == 'DRAW':
 					return move,0
 
@@ -85,7 +87,7 @@ class Team25_minimax():
 					sub_move,sub_value = self.min_max(move,ply,depth -1,alpha,beta)					
 					bs.block_status[move[0]/4][move[1]/4] = '-'
 					# Add the reward of winning a block 
-					sub_value += self.depth - depth
+					sub_value += self.turn - depth
 
 				elif block_won == 0:
 					bs.block_status[move[0]/4][move[1]/4] = 'd'
@@ -122,9 +124,7 @@ class Team25_minimax():
 				# bs.print_board()
 				winner, message = bs.find_terminal_state()
 				if message == 'WON':
-					return move,-5*(self.depth-depth)
-				if message == 'DRAW':
-					return move,0
+					return move,-5*(self.turn-depth)
 				# print("winner:",winner,"message:",message)
 
 				block_won = bs.check_block_status(old_move[0]/4,old_move[1]/4,'o')
@@ -134,7 +134,7 @@ class Team25_minimax():
 					sub_move,sub_value = self.min_max(move,ply,depth -1,alpha,beta)					
 					bs.block_status[move[0]/4][move[1]/4] = '-'
 					# Add the reward of winning a block 
-					sub_value += depth - self.depth
+					sub_value += depth - self.turn
 
 				elif block_won == 0:
 					bs.block_status[move[0]/4][move[1]/4] = 'd'

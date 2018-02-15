@@ -9,7 +9,7 @@ import copy
 import numpy as np
 
 
-DEPTH = 10
+DEPTH = 3
 
 class Team25_minimax_numpy():
 	# ply is the character x or o
@@ -50,23 +50,73 @@ class Team25_minimax_numpy():
 
 		self.new_block = new_block 
 
+
+	def move(self, board, old_move, flag):
+
+		#You have to implement the move function with the same signature as this
+		#Find the list of valid cells allowed
+		
+		self.copy_board(board)
+		# self.board = copy.deepcopy(board)
+		# if(old_move != (-1,-1)):
+		# 	self.new_board[old_move[0]/4][old_move[1]/4][old_move[0]%4][old_move[1]%4] == -1*self.ply
+
+		# print("Allowed moves:",possible_moves)
+		# print("Calcuated moves",self.find_valid_move_cells(old_move))
+
+		# print("Current Board state")
+		# self.board.print_board()
+
+		sub_move,move_value = self.min_max(old_move,self.ply,DEPTH)
+		# print("move:", sub_move,"value:",move_value)
+		# being send as a numpy int hence error
+		# self.new_board[sub_move[0]/4][sub_move[1]/4][sub_move[0]%4][sub_move[1]%4] == self.ply
+		# print(old_move,sub_move)
+		print("move:",sub_move,"value:",move_value)
+		return sub_move
+	
+
+
 	def find_valid_move_cells(self,old_move):
-		#returns the valid cells allowed given the last move and the current board state
+		
+		allowed_cells = []
 		allowed_block = [old_move[0]%4, old_move[1]%4]
 		#checks if the move is a free move or not based on the rules
-		old_move = tuple(old_move)
-		if old_move != (-1,-1) and self.new_block[allowed_block[0]][allowed_block[1]] == 0.0:
-			possible_moves = np.dstack(np.where(self.new_board[allowed_block[0]][allowed_block[1]] == 0))[0]
-			possible_moves = possible_moves + [4*allowed_block[0],4*allowed_block[1]]
-
+		if old_move != (-1,-1) and self.new_block[allowed_block[0]][allowed_block[1]] == 0:
+			for i in range(4):
+				for j in range(4):
+					if self.new_board[allowed_block[1]][allowed_block[1]][i][j] == 0:
+						allowed_cells.append((i,j))
 		else:
-			# First find the possible blocks to place
-			possible_moves = np.empty((0,2),int)
-			avaible_blocks = np.dstack(np.where(self.new_block == 0))[0]
-			for x in avaible_blocks:
-				possible_moves = np.append(possible_moves,np.dstack(np.where(self.new_board[x[0]][x[1]] == 0))[0] + [4*x[0], 4*x[1]],axis=0)
+			for k in range(4):
+				for l in range(4):
+					if self.new_block[k][l] == 0:
+						for i in range(4):
+							for j in range(4):
+								if self.new_board[k][l][i][j] == 0:
+									allowed_cells.append((i,j))
 
-		return possible_moves	
+		print(self.new_board)
+		return allowed_cells				
+
+
+
+		# #returns the valid cells allowed given the last move and the current board state
+		# allowed_block = [old_move[0]%4, old_move[1]%4]
+		# #checks if the move is a free move or not based on the rules
+		# old_move = tuple(old_move)
+		# if old_move != (-1,-1) and self.new_block[allowed_block[0]][allowed_block[1]] == 0.0:
+		# 	possible_moves = np.dstack(np.where(self.new_board[allowed_block[0]][allowed_block[1]] == 0))[0]
+		# 	possible_moves = possible_moves + [4*allowed_block[0],4*allowed_block[1]]
+
+		# else:
+		# 	# First find the possible blocks to place
+		# 	possible_moves = np.empty((0,2),int)
+		# 	avaible_blocks = np.dstack(np.where(self.new_block == 0))[0]
+		# 	for x in avaible_blocks:
+		# 		possible_moves = np.append(possible_moves,np.dstack(np.where(self.new_board[x[0]][x[1]] == 0))[0] + [4*x[0], 4*x[1]],axis=0)
+
+		# return possible_moves	
 
 
 	# returns 1 if x won, 0 if continue state ,-1 for o and 2 for draw 
@@ -106,28 +156,6 @@ class Team25_minimax_numpy():
 	def check_block_status(self,x,y):
 		return self.find_terminal_state(self.new_board[x][y])
 
-	def move(self, board, old_move, flag):
-
-		#You have to implement the move function with the same signature as this
-		#Find the list of valid cells allowed
-		
-		self.copy_board(board)
-		# self.board = copy.deepcopy(board)
-		# if(old_move != (-1,-1)):
-		# 	self.new_board[old_move[0]/4][old_move[1]/4][old_move[0]%4][old_move[1]%4] == -1*self.ply
-
-		# print("Allowed moves:",possible_moves)
-		# print("Calcuated moves",self.find_valid_move_cells(old_move))
-
-		# print("Current Board state")
-		# self.board.print_board()
-
-		sub_move,move_value = self.min_max(old_move,self.ply,DEPTH)
-		# print("move:", sub_move,"value:",move_value)
-		# being send as a numpy int hence error
-		# self.new_board[sub_move[0]/4][sub_move[1]/4][sub_move[0]%4][sub_move[1]%4] == self.ply
-		# print(old_move,sub_move)
-		return int(sub_move[0]),int(sub_move[1])
 
 	def min_max(self, old_move,ply,depth,alpha = -10000,beta = 10000):		
 
@@ -137,17 +165,17 @@ class Team25_minimax_numpy():
 
 		# print("old move:",old_move)
 		possible_moves = self.find_valid_move_cells(old_move)
-		if possible_moves.size == 0 :
+		if len(possible_moves) == 0 :
 			possible_moves = self.find_valid_move_cells((-1,-1))
 
-		if possible_moves.size == 0:
+		if len(possible_moves) == 0:
 			winner = self.find_terminal_state(self.new_block)
 			# print("winner:",winner,"message:",message)
 			if winner == 1 or winner == -1:
 				return old_move,winner*5*(DEPTH-depth)
 			else: 
 				return old_move, 0
-		# print("possible:",possible_moves)
+		print("possible:",possible_moves)
 		
 		sub_move = ''
 		sub_value = ''
@@ -160,9 +188,13 @@ class Team25_minimax_numpy():
 				self.new_board[move[0]/4][move[0]/4][move[0]%4][move[1]%4] = 1
 
 				winner = self.find_terminal_state(self.new_block)
-				# print("winner:",winner,"message:",message)
+				# print("winner:",winner)
 				if winner == 1:
 					return move,5*(DEPTH-depth)
+
+				elif winner == 2:
+					return move, 0
+
 				block_won = self.check_block_status(old_move[0]/4,old_move[1]/4)
 				# print("block_won:",block_won)
 				# self.print_board()
@@ -213,6 +245,8 @@ class Team25_minimax_numpy():
 				winner  = self.find_terminal_state(self.new_block)
 				if winner == -1:
 					return move,-5*(DEPTH-depth)
+				elif winner == 2:
+					return move,0 
 				# print("winner:",winner,"message:",message)
 
 				block_won = self.check_block_status(old_move[0]/4,old_move[1]/4)

@@ -5,7 +5,7 @@ import time
 import copy
 	
 
-class Team25_minimax():
+class Team25_minimax_monte_carlo():
 	# ply is the character x or o
 	def __init__(self,ply,depth):
 		self.block_number = 0
@@ -13,6 +13,7 @@ class Team25_minimax():
 		self.board = ''	
 		self.turn = 2
 		self.depth = depth
+		self.explore = self.turn
 		pass
 
 	def move(self, board, old_move, flag):
@@ -33,6 +34,90 @@ class Team25_minimax():
 		self.turn += 2
 
 		return sub_move
+
+	def monte_carlo(self,old_move,ply):
+		bs = self.board
+		possible_moves = bs.find_valid_move_cells(old_move)
+		if possible_moves == [] :
+			possible_moves = bs.find_valid_move_cells((-1,-1))
+		# possible_moves = possible_moves[0:16:4]
+		if possible_moves == []:
+			winner, message = bs.find_terminal_state()
+			# print("winner:",winner,"message:",message)
+			if message == 'WON':
+				return (5 if ply == 1 else -5)
+			elif message == 'DRAW':
+				return  0	
+			else: 
+				return  0
+		# print("possible:",possible_moves)
+
+		move = random.sample(possible_moves,1)[0]	
+		
+		if ply == 1:
+			bs.board_status[move[0]][move[1]] = 'x'
+
+			winner, message = bs.find_terminal_state()
+			# print("winner:",winner,"message:",message)
+			if message == 'WON':
+				return 5
+			elif message == 'DRAW':
+				return 0
+
+			block_won = bs.check_block_status(old_move[0]/4,old_move[1]/4,'x')
+			# print("block_won:",block_won)
+			# bs.print_board()
+
+			if block_won == 1:
+				bs.block_status[move[0]/4][move[1]/4] = 'x'
+				sub_value = self.monte_carlo(move,ply)					
+				bs.block_status[move[0]/4][move[1]/4] = '-'
+				# Add the reward of winning a block 
+				sub_value += 1
+
+			elif block_won == 0:
+				bs.block_status[move[0]/4][move[1]/4] = 'd'
+				sub_value = self.monte_carlo(move,ply^1)					
+				bs.block_status[move[0]/4][move[1]/4] = '-'
+			
+			else:
+				sub_value = self.monte_carlo(move,ply^1)
+
+		elif ply == 0:
+
+			bs.board_status[move[0]][move[1]] = 'o'
+
+			winner, message = bs.find_terminal_state()
+			# print("winner:",winner,"message:",message)
+			if message == 'WON':
+				return -5
+			elif message == 'DRAW':
+				return 0
+
+			block_won = bs.check_block_status(old_move[0]/4,old_move[1]/4,'o')
+			# print("block_won:",block_won)
+			# bs.print_board()
+
+			if block_won == 1:
+				bs.block_status[move[0]/4][move[1]/4] = 'o'
+				sub_value = self.monte_carlo(move,ply)					
+				bs.block_status[move[0]/4][move[1]/4] = '-'
+				# Add the reward of winning a block 
+				sub_value -= 1
+
+			elif block_won == 0:
+				bs.block_status[move[0]/4][move[1]/4] = 'd'
+				sub_value = self.monte_carlo(move,ply^1)					
+				bs.block_status[move[0]/4][move[1]/4] = '-'
+			
+			else:
+				sub_value = self.monte_carlo(move,ply^1)
+
+		bs.board_status[move[0]][move[1]] = '-'
+
+		return sub_value
+
+
 
 	def min_max(self, old_move,ply,depth,alpha = -10000,beta = 10000):		
 
@@ -56,8 +141,19 @@ class Team25_minimax():
 		# print("possible:",possible_moves)
 		
 		if(depth == 0):
-			return old_move, 0
-		
+			mc_sum = 0
+			explore = 3*len(possible_moves)
+			for i in range(explore):
+				mc_sum += self.monte_carlo(old_move,ply)
+
+			mc_sum = 5*float(mc_sum/explore)
+			
+			# print("mc_sum:",mc_sum)	
+			return old_move, mc_sum
+
+
+
+
 		sub_move = ''
 		sub_value = ''
 		block_won = 0

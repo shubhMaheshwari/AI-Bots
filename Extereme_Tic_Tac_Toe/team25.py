@@ -7,13 +7,14 @@ import copy
 import numpy as np
 from team25_minmax_numpy import Team25_minimax_numpy
 from team25_minmax import Team25_minimax
+from team25_minmax_ida import Team25_minimax_ida
+from team25_minmax_monte_carlo import Team25_minimax_monte_carlo
 
 TIME = 16
 MAX_PTS = 68
 # N = 4
-
-
-# DEPTH = 5
+t2 = 0 
+t1 = 0
 TURN_RAND_STOP = 50 # Stop random moves after move 50
 # For min max with pruning 
 # turn depth num win lost draw
@@ -160,6 +161,7 @@ class Board:
 		if (type(old_move[0]) is not int) or (type(old_move[1]) is not int) or (type(new_move[0]) is not int) or (type(new_move[1]) is not int):
 			return False
 		
+
 		if (old_move != (-1,-1)) and (old_move[0] < 0 or old_move[0] > 16 or old_move[1] < 0 or old_move[1] > 16):
 			return False
 		cells = self.find_valid_move_cells(old_move)
@@ -224,6 +226,9 @@ class Board:
 		return 0
 
 def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
+		
+		global t2,t1
+
 		# print("turn:",turn, "ply:",ply)
 		temp_board_status = copy.deepcopy(game_board.board_status)
 		temp_block_status = copy.deepcopy(game_board.block_status)
@@ -238,7 +243,10 @@ def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 			if(turn < TURN_RAND_STOP):
 				p_move = saitama3.move(game_board, old_move, flg)
 			else:		
+				print("Turn:",turn,"Time:",t2 - t1)
+				t1 = time.time()
 				p_move = obj.move(game_board, old_move, flg)
+				t2 = time.time()
 				# p1_move = saitama4.move(game_board, old_move, flg)
 				# print(p_move,p1_move)
 		except TimedOutExc:					#timeout error
@@ -413,9 +421,9 @@ if __name__ == '__main__':
 	saitama2 = ''
 	option = sys.argv[1]	
 	if option == '1':
-		saitama1 = Team25_minimax('x')
+		saitama1 = Team25_minimax_monte_carlo('x',100)
 		# saitama4 = Team25_minimax('x')
-		saitama2 = RandomPlayer('o')
+		saitama2 = Team25_minimax('o',50)
 		saitama3 = RandomPlayer('x')
 	elif option == '2':
 		saitama1 = Team25_minimax_numpy('x')
@@ -424,8 +432,10 @@ if __name__ == '__main__':
 		saitama3 = RandomPlayer('x')
 
 	elif option == '3':
-		saitama1 = Team25_minimax_numpy('x')
-		saitama2 = Manual_Player()
+		saitama1 = Team25_minimax_ida('x')
+		saitama2 = RandomPlayer('o')
+		saitama3 = RandomPlayer('x')
+
 	elif option == '4':
 		saitama1 = Manual_Player()
 		saitama2 = Manual_Player()
