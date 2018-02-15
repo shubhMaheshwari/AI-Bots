@@ -422,19 +422,14 @@ if __name__ == '__main__':
 	option = sys.argv[1]	
 	if option == '1':
 		saitama1 = Team25_minimax_monte_carlo('x',100)
-		# saitama4 = Team25_minimax('x')
 		saitama2 = Team25_minimax('o',50)
-		saitama3 = RandomPlayer('x')
 	elif option == '2':
 		saitama1 = Team25_minimax_numpy('x')
-		# saitama4 = Team25_minimax('x')
 		saitama2 = RandomPlayer('o')
-		saitama3 = RandomPlayer('x')
 
 	elif option == '3':
-		saitama1 = Team25_minimax_ida('x')
+		saitama1 = Team25_minimax('x',150)
 		saitama2 = RandomPlayer('o')
-		saitama3 = RandomPlayer('x')
 
 	elif option == '4':
 		saitama1 = Manual_Player()
@@ -443,6 +438,8 @@ if __name__ == '__main__':
 		print 'Invalid option'
 		sys.exit(1)
 
+	saitama3 = RandomPlayer('x')
 	x = gameplay(saitama1, saitama2)
+	
 	print "Player 1 points:", x[0] 
 	print "Player 2 points:", x[1]
