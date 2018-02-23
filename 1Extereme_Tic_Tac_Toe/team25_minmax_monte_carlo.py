@@ -38,85 +38,6 @@ class Team25_minimax_monte_carlo():
 
 		return sub_move
 
-	def monte_carlo(self,old_move,ply):
-		bs = self.board
-		winner, message = bs.find_terminal_state()
-		# print("winner:",winner,"message:",message)
-		if message == 'WON':
-			return (5 if ply == 1 else -5)
-		elif message == 'DRAW':
-			return  0	
-
-
-		possible_moves = bs.find_valid_move_cells(old_move)
-		if possible_moves == [] :
-			possible_moves = bs.find_valid_move_cells((-1,-1))
-		if possible_moves == []:
-			bs.print_board()
-			sys.exit()
-		# print("possible:",possible_moves)
-
-		move = random.sample(possible_moves,1)[0]	
-		
-		if ply == 1:
-			bs.board_status[move[0]][move[1]] = 'x'
-
-			block_won = bs.check_block_status(move[0]/4,move[1]/4,'x')
-			# print("block_won:",block_won)
-			# bs.print_board()
-			if block_won == 1:
-				bs.board_status[move[0]][move[1]] = '-'
-
-				return 1
-
-			if block_won == 1:
-				bs.block_status[move[0]/4][move[1]/4] = 'x'
-				sub_value = self.monte_carlo(move,ply)					
-				bs.block_status[move[0]/4][move[1]/4] = '-'
-				# Add the reward of winning a block 
-				sub_value +=1
-
-			elif block_won == 0:
-				bs.block_status[move[0]/4][move[1]/4] = 'd'
-				sub_value = self.monte_carlo(move,ply^1)					
-				bs.block_status[move[0]/4][move[1]/4] = '-'
-			
-			else:
-				sub_value = self.monte_carlo(move,ply^1)
-
-		elif ply == 0:
-
-			bs.board_status[move[0]][move[1]] = 'o'
-			block_won = bs.check_block_status(move[0]/4,move[1]/4,'o')
-			# print("block_won:",block_won)
-			# bs.print_board()
-			if block_won == 1:
-				bs.board_status[move[0]][move[1]] = '-'
-
-				return -1
-
-			if block_won == 1:
-				bs.block_status[move[0]/4][move[1]/4] = 'o'
-				sub_value = self.monte_carlo(move,ply)					
-				bs.block_status[move[0]/4][move[1]/4] = '-'
-				# Add the reward of winning a block 
-				sub_value -=1;
-
-			elif block_won == 0:
-				bs.block_status[move[0]/4][move[1]/4] = 'd'
-				sub_value = self.monte_carlo(move,ply^1)					
-				bs.block_status[move[0]/4][move[1]/4] = '-'
-			
-			else:
-				sub_value = self.monte_carlo(move,ply^1)
-
-		bs.board_status[move[0]][move[1]] = '-'
-
-		# bs.print_board()
-
-		return sub_value
-
-
 
 	def min_max(self, old_move,ply,depth,alpha = -10000,beta = 10000):		
 
@@ -144,17 +65,6 @@ class Team25_minimax_monte_carlo():
 
 
 		if(depth == 0):
-			# mc_sum = 0
-			# explore = 1
-			# for i in range(explore):
-			# 	mc_sum += self.monte_carlo(old_move,ply)
-
-			# 	tmove = time.time()				
-			# 	if(tmove - self.time > 15):
-			# 		break					
-
-			# mc_sum = float(mc_sum)/explore
-			# print(mc_sum)
 			return old_move, 0
 
 

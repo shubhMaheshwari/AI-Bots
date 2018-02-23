@@ -3,17 +3,16 @@ import random
 import signal
 import time
 import copy
-	
-import numpy as np
-from team25_minmax_numpy import Team25_minimax_numpy
-from team25_minmax import Team25_minimax
-from team25_minmax_monte_carlo import Team25_minimax_monte_carlo
+import json	
 
-TIME = 16
+
+import numpy as np
+TIME = 1000
 MAX_PTS = 68
 # N = 4
 t2 = 0 
 t1 = 0
+training_data = []
 # For min max with pruning 
 # turn depth num win lost draw
 # 180  4	 10   5   2    3	
@@ -24,12 +23,88 @@ t1 = 0
 #  0   30	 10   5   2    3	
 #  50   30	 10   4   1    5	
 
-class TimedOutExc(Exception):
-	pass
+class Simple_minimax(object):
 
-def handler(signum, frame):
-	#print 'Signal handler called with signal', signum
-	raise TimedOutExc()
+	def __init__(self, ply):
+		self.ply = 1 if ply == 'x' else -1
+		self.board = ''	
+		self.turn = 0 if ply == 'x' else 1
+		pass
+
+
+	def move(self, board, old_move, flag):
+		#You have to implement the move function with the same signature as this
+		#Find the list of valid cells allowed
+		# print("Allowed moves:",possible_moves)
+		self.board = copy.deepcopy(board)
+		# print("Current Board state")
+		# self.board.print_board()
+		# IDA instead of DFS
+
+		# for i in range(1,self.turn):
+
+		self.turn += 2
+		if self.turn < 8:
+			possible_moves = self.board.find_valid_move_cells()
+			return random.sample(possible_moves, 1)[0]
+		sub_move,move_value = self.min_max(old_move,self.ply)
+		print("move:",sub_move,"value:",move_value,"ply:",self.ply)
+	
+
+		return sub_move	
+
+	def min_max(self, old_move,ply,alpha = -10000,beta = 10000,depth=0):		
+
+		# print(-1*ply,old_move)
+		bs = self.board 		
+		# bs.print_board()
+		# print("old move:",old_move)
+		winner, message = bs.find_terminal_state()
+
+
+		# print("winner:",winner,"message:",message)
+		if message == 'WON':
+			return old_move,-ply*(16-depth)
+		elif message == 'DRAW':
+			return old_move,0
+		possible_moves = bs.find_valid_move_cells()
+
+		# print(possible_moves)
+		best_move = ''
+		best_val = -100*ply
+
+		for move in possible_moves:
+			# print(possible_moves)
+
+			bs.block_status[move[0]][move[1]] = 'x' if ply == 1 else 'o'
+			sub_move, sub_value = self.min_max(move, -1*ply,alpha,beta,depth+1)
+			# print("sub_value",sub_value)
+
+			if ply == 1:
+				if sub_value > best_val:
+						best_val = sub_value
+						best_move = move
+
+				alpha = max(alpha,best_val)
+
+
+			elif ply == -1:
+				if sub_value < best_val:
+						best_val = sub_value
+						best_move = move
+
+				beta = min(beta,best_val)
+
+			# print("alpha:",alpha,"beta",beta)
+			bs.block_status[move[0]][move[1]] = '-'
+	
+			if(beta <= alpha):
+				# print("Alpha beta prunned")
+				break				
+
+
+		return best_move, best_val
+
 
 class RandomPlayer():
 	# ply is the character x or o
@@ -41,44 +116,41 @@ class RandomPlayer():
 	def move(self, board, old_move, flag):
 		#You have to implement the move function with the same signature as this
 		#Find the list of valid cells allowed
-		possible_moves = board.find_valid_move_cells(old_move)
+		possible_moves = board.find_valid_move_cells()
 		# udpate_list = [board.update(old_move,new_move,self.ply) for new_moves in possible_moves]
 		# print possible_moves
 		# print udpate_list
-		return random.sample(possible_moves,1)[0]		
+		return random.sample(possible_moves,1)[0]
 
 class Manual_Player:
 	def __init__(self):
 		pass
 	def move(self, board, old_move, flag):
 		print 'Enter your move: <format:row column> (you\'re playing with', flag + ")"	
-		cells = board.find_valid_move_cells(old_move)
+		cells = board.find_valid_move_cells()
 		print 'Valid Moves'
 		print cells
 		mvp = raw_input()
 		mvp = mvp.split()
 		return (int(mvp[0]), int(mvp[1]))		
 
+
+class TimedOutExc(Exception):
+	pass
+
+def handler(signum, frame):
+	#print 'Signal handler called with signal', signum
+	raise TimedOutExc()
+
 class Board:
 
 	def __init__(self):
 		# board_status is the game board
 		# block status shows which blocks have been won/drawn and by which player
-		self.board_status = [['-' for i in range(16)] for j in range(16)]
 		self.block_status = [['-' for i in range(4)] for j in range(4)]
 
 	def print_board(self):
 		# for printing the state of the board
-		print '==============Board State=============='
-		for i in range(16):
-			if i%4 == 0:
-				print
-			for j in range(16):
-				if j%4 == 0:
-					print "",
-				print self.board_status[i][j],
-			print 
-		print
 
 		print '==============Block State=============='
 		for i in range(4):
@@ -90,21 +162,13 @@ class Board:
 		print
 
 	# old move = (row,column) row,column = [0,15]
-	def find_valid_move_cells(self, old_move):
+	def find_valid_move_cells(self):
 		#returns the valid cells allowed given the last move and the current board state
 		allowed_cells = []
-		allowed_block = [old_move[0]%4, old_move[1]%4]
-		#checks if the move is a free move or not based on the rules
-		if old_move != (-1,-1) and self.block_status[allowed_block[0]][allowed_block[1]] == '-':
-			for i in range(4*allowed_block[0], 4*allowed_block[0]+4):
-				for j in range(4*allowed_block[1], 4*allowed_block[1]+4):
-					if self.board_status[i][j] == '-':
-						allowed_cells.append((i,j))
-		else:
-			for i in range(16):
-				for j in range(16):
-					if self.board_status[i][j] == '-' and self.block_status[i/4][j/4] == '-':
-						allowed_cells.append((i,j))
+		for i in range(4):
+			for j in range(4):
+				if self.block_status[i][j] == '-':
+					allowed_cells.append((i,j))
 
 		return allowed_cells	
 
@@ -115,7 +179,6 @@ class Board:
 
 		cntx = 0
 		cnto = 0
-		cntd = 0
 
 		for i in range(4):						#counts the blocks won by x, o and drawn blocks
 			for j in range(4):
@@ -123,8 +186,6 @@ class Board:
 					cntx += 1
 				if bs[i][j] == 'o':
 					cnto += 1
-				if bs[i][j] == 'd':
-					cntd += 1
 
 		for i in range(4):
 			row = bs[i]							#i'th row 
@@ -132,23 +193,29 @@ class Board:
 			#print row,col
 			#checking if i'th row or i'th column has been won or not
 			if (row[0] =='x' or row[0] == 'o') and (row.count(row[0]) == 4):	
+				# print("row:",i)
 				return (row[0],'WON')
 			if (col[0] =='x' or col[0] == 'o') and (col.count(col[0]) == 4):
+				# print("col:",i)
 				return (col[0],'WON')
 
 		#checking if diamond has been won
 		if(bs[1][0] == bs[0][1] == bs[2][1] == bs[1][2]) and (bs[1][0] == 'x' or bs[1][0] == 'o'):
-			return (bs[0][0],'WON')
+			# print('dim:',1)
+			return (bs[1][0],'WON')
 		if(bs[1][1] == bs[0][2] == bs[2][2] == bs[1][3]) and (bs[1][1] == 'x' or bs[1][1] == 'o'):
-			return (bs[0][0],'WON')
+			# print('dim:',2)
+			return (bs[1][1],'WON')
 		if(bs[2][0] == bs[1][1] == bs[3][1] == bs[2][2]) and (bs[2][0] == 'x' or bs[2][0] == 'o'):
-			return (bs[0][0],'WON')
+			# print('dim:',3)			
+			return (bs[2][0],'WON')
 		if(bs[2][1] == bs[1][2] == bs[3][2] == bs[2][3]) and (bs[2][1] == 'x' or bs[2][1] == 'o'):
-			return (bs[0][0],'WON')
+			# print('dim:',4)
+			return (bs[2][1],'WON')
 
-		if cntx+cnto+cntd <16:		#if all blocks have not yet been won, continue
+		if cntx+cnto <16:		#if all blocks have not yet been won, continue
 			return ('-', 'CONTINUE')
-		elif cntx+cnto+cntd == 16:							#if game is drawn
+		elif cntx+cnto == 16:							#if game is drawn
 			return ('NONE', 'DRAW')
 
 	def check_valid_move(self, old_move, new_move):
@@ -161,7 +228,7 @@ class Board:
 
 		if (old_move != (-1,-1)) and (old_move[0] < 0 or old_move[0] > 16 or old_move[1] < 0 or old_move[1] > 16):
 			return False
-		cells = self.find_valid_move_cells(old_move)
+		cells = self.find_valid_move_cells()
 
 		return new_move in cells
 
@@ -171,63 +238,18 @@ class Board:
 		if(self.check_valid_move(old_move, new_move)) == False:
 			return 'UNSUCCESSFUL', False
 
-		self.board_status[new_move[0]][new_move[1]] = ply
-		x = new_move[0]/4
-		y = new_move[1]/4
+		x = new_move[0]
+		y = new_move[1]
 
-		block_won = self.check_block_status(x,y,ply)
-		# if won or draw then update the block with player or draw
-		if block_won == 1:
-			self.block_status[x][y] = ply
-		elif block_won == 0:
-			self.block_status[x][y] = 'd'
-		else:
-			pass
+		self.block_status[x][y] = ply
 
-		return 'SUCCESSFUL', True if block_won == 1 else False  
-
-	# x,y => which block to check , ply = for which player
-	def check_block_status(self,x,y,ply):	
-		fl = 0
-		bs = self.board_status
-
-		#checking if a block has been won or drawn or not after the current move
-		for i in range(4):
-			#checking for horizontal pattern(i'th row)
-			if (bs[4*x+i][4*y] == bs[4*x+i][4*y+1] == bs[4*x+i][4*y+2] == bs[4*x+i][4*y+3]) and (bs[4*x+i][4*y] == ply):
-				return 1
-			#checking for vertical pattern(i'th column)
-			if (bs[4*x][4*y+i] == bs[4*x+1][4*y+i] == bs[4*x+2][4*y+i] == bs[4*x+3][4*y+i]) and (bs[4*x][4*y+i] == ply):
-				return 1
-
-		#checking for diamond pattern
-		#diamond 1
-		if (bs[4*x+1][4*y] == bs[4*x][4*y+1] == bs[4*x+2][4*y+1] == bs[4*x+1][4*y+2]) and (bs[4*x+1][4*y] == ply):
-			return 1
-		#diamond 2
-		if (bs[4*x+1][4*y+1] == bs[4*x][4*y+2] == bs[4*x+2][4*y+2] == bs[4*x+1][4*y+3]) and (bs[4*x+1][4*y+1] == ply):
-			return 1
-		#diamond 3
-		if (bs[4*x+2][4*y] == bs[4*x+1][4*y+1] == bs[4*x+3][4*y+1] == bs[4*x+2][4*y+2]) and (bs[4*x+2][4*y] == ply):
-			return 1
-		#diamond 4
-		if (bs[4*x+2][4*y+1] == bs[4*x+1][4*y+2] == bs[4*x+3][4*y+2] == bs[4*x+2][4*y+3]) and (bs[4*x+2][4*y+1] == ply):
-			return 1
-
-		#checking if a block has any more cells left or has it been drawn
-		for i in range(4):
-			for j in range(4):
-				if bs[4*x+i][4*y+j] =='-':
-					return -1
-		# If no cell is remaining then return 0
-		return 0
+		return 'SUCCESSFUL', True
 
 def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 		
 		global t2,t1
 
 		# print("turn:",turn, "ply:",ply)
-		temp_board_status = copy.deepcopy(game_board.board_status)
 		temp_block_status = copy.deepcopy(game_board.block_status)
 		signal.alarm(TIME)
 		WINNER = ''
@@ -236,16 +258,12 @@ def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 		to_break = False
 		p_move = old_move
 		try:	
-			#try to get player 1's move			
-			if(turn < TURN_RAND_STOP):
-				p_move = saitama3.move(game_board, old_move, flg)
-			else:		
-				print("Turn:",turn,"Time:",t2 - t1)
-				t1 = time.time()
-				p_move = obj.move(game_board, old_move, flg)
-				t2 = time.time()
-				# p1_move = saitama4.move(game_board, old_move, flg)
-				# print(p_move,p1_move)
+			#try to get player 1's move	
+			t1 = time.time()
+			p_move = obj.move(game_board, old_move, flg)
+			t2 = time.time()
+			print("Turn:",turn,"Time:",t2 - t1)
+
 		except TimedOutExc:					#timeout error
 #			print e
 			WINNER = opp
@@ -262,13 +280,13 @@ def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 		# signal.alarm(0)
 
 		#check if board is not modified and move returned is valid
-		if (game_board.block_status != temp_block_status) or (game_board.board_status != temp_board_status):
+		if  game_board.block_status != temp_block_status:
 			WINNER = opp
 			MESSAGE = 'MODIFIED THE BOARD'
 			pts[opp] = MAX_PTS
 			return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], True, False,turn +1
 
-		update_status, block_won = game_board.update(old_move, p_move, flg)
+		update_status = game_board.update(old_move, p_move, flg)
 		# print("move played : ",p_move)
 			
 		if update_status == 'UNSUCCESSFUL':
@@ -292,10 +310,10 @@ def player_turn(game_board, old_move, obj, ply, opp, flg,turn):
 			MESSAGE = 'DRAW'
 			return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], True, False,turn
 
-		return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], False, block_won, turn if block_won else turn +1
+		return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], False, True, turn+1
 
 def gameplay(obj1, obj2):				#game simulator
-
+	global training_data
 	game_board = Board()
 	fl1 = 'x'
 	fl2 = 'o'
@@ -306,29 +324,29 @@ def gameplay(obj1, obj2):				#game simulator
 	pts2 = 0
 	turn = 0
 
-
 	# game_board.print_board()
 	signal.signal(signal.SIGALRM, handler)
 	while (turn < 256):
-		#player 1 turn
-		p_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won,turn = player_turn(game_board, old_move, obj1 if turn%2 == 0 else obj2, "P1" if turn%2 == 0 else "P2" , "P2" if turn%2 == 0 else "P1" , fl1 if turn%2 == 0 else fl2,turn)
+		p_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won,turn = player_turn(game_board, old_move, obj1 if turn%2 == 0 else obj2, "P1" if turn%2 == 0 else "P2" , "P2" if turn%2 == 0 else "P1" , fl1 if turn%2 == 0 else fl2,turn)	
+
+		# Stupid same memory is being used,hence we need a new variable
+
+		old_board = copy.deepcopy(game_board.block_status)
+		x_train = {'board':old_board,
+			'WINNER':WINNER,
+			'old_move':old_move,
+			}
+
+		training_data.append(x_train)
+		x_train = {}
+		
+
 		# print(p_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won,turn)
 		if to_break:
 			break
 
 		old_move = p_move
 		game_board.print_board()
-
-		if block_won:
-			# p1_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won = player_turn(game_board, old_move, obj1, "P1", "P2", fl1)
-			p_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won,turn = player_turn(game_board, old_move, obj1 if turn%2 == 0 else obj2, "P1" if turn%2 == 0 else "P2" , "P2" if turn%2 == 0 else "P1" , fl1 if turn%2 == 0 else fl2,turn)
-			
-			if to_break:
-				break
-
-			old_move = p_move
-			print(turn, MESSAGE)
-			game_board.print_board()			
 
 		# break
 		# if turn > 5:
@@ -349,7 +367,7 @@ def gameplay(obj1, obj2):				#game simulator
 		# 		break
 		
 		# 	old_move = p2_move
-		# 	game_board.print_board()		
+		# 	game_board.print_board()
 	game_board.print_board()
 
 	print "Winner:", WINNER
@@ -406,7 +424,7 @@ def is_corner(row, col):
 	return 0
 
 
-TURN_RAND_STOP = 10 # Stop random moves after move 50
+TURN_RAND_STOP = 30 # Stop random moves after move 50
 
 if __name__ == '__main__':
 
@@ -416,30 +434,44 @@ if __name__ == '__main__':
 		print '                2 => Human vs. Random Player'
 		print '                3 => Human vs. Human'
 		sys.exit(1)
- 
+ 	data = []
 	saitama1 = ''
 	saitama2 = ''
 	option = sys.argv[1]	
-	if option == '1':
-		saitama1 = Team25_minimax_monte_carlo('x',6)
-		saitama2 = Team25_minimax('o',150)
-	elif option == '2':
-		saitama1 = Team25_minimax('x',200)
-		saitama2 = RandomPlayer('o')
+	for i in range(3000):
+		training_data = []
+		if i%3 == 1:
+			saitama1 = Simple_minimax('x')
+			saitama2 = RandomPlayer('o')
+		elif i%3 == 2:
+			saitama1 = Simple_minimax('x')
+			saitama2 = Simple_minimax('o')
 
-	elif option == '3':
-		saitama1 = Team25_minimax_monte_carlo('x',6)
-		saitama2 = RandomPlayer('o')
+		elif i%3 == 0:
+			saitama1 = RandomPlayer('x')
+			saitama2 = Simple_minimax('o')
+		else:
+			print 'Invalid option'
+			sys.exit(1)
 
-	elif option == '4':
-		saitama1 = Manual_Player()
-		saitama2 = Manual_Player()
-	else:
-		print 'Invalid option'
-		sys.exit(1)
+		saitama3 = RandomPlayer('x')
+		try:
+			x = gameplay(saitama1, saitama2)
+			print "Player 1 points:", x[0] 
+			print "Player 2 points:", x[1]
+			print([x['board'] for x in training_data])
+		except KeyboardInterrupt :
+			break
 
-	saitama3 = RandomPlayer('x')
-	x = gameplay(saitama1, saitama2)
+		print i
+		data.append(training_data)	
 	
-	print "Player 1 points:", x[0] 
-	print "Player 2 points:", x[1]
+
+	r = open('simple_game.json','w+')
+	# file = r.ranged()
+	# data = json.load(r)
+	# data.update(training_data)
+	json.dump(data, r)
+
+
+

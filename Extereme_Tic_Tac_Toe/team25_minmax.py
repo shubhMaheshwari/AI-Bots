@@ -26,7 +26,7 @@ class Team25_minimax():
 		# IDA instead of DFS
 
 		# for i in range(1,self.turn):
-		sub_move,move_value = self.min_max(old_move,self.ply,self.depth)
+		sub_move,move_value = self.min_max(old_move,self.ply,self.depth,ispolicy=1)
 		print("move:",sub_move,"value:",move_value,"ply:",self.ply)
 		
 
@@ -34,7 +34,7 @@ class Team25_minimax():
 
 		return sub_move
 
-	def min_max(self, old_move,ply,depth,alpha = -10000,beta = 10000):		
+	def min_max(self, old_move,ply,depth,alpha = -10000,beta = 10000,ispolicy = 0):		
 
 		bs = self.board 		
 		
@@ -61,6 +61,12 @@ class Team25_minimax():
 		sub_move = ''
 		sub_value = ''
 		block_won = 0
+
+		# Policy:
+		if ispolicy == 1:
+			possible_moves = self.policy(possible_moves)
+		elif ispolicy == 0:
+			random.shuffle(possible_moves,ply)
 
 		# print("Starting Loop")
 		if ply == 1:	
@@ -110,7 +116,7 @@ class Team25_minimax():
 
 
 				bs.board_status[move[0]][move[1]] = '-'
-
+			
 			return best_move,best_val
 
 		else:
@@ -161,5 +167,18 @@ class Team25_minimax():
 			# except Exception as e:
 			# 	print(possible_moves)
 			# 	print(e)
-			# 	exit() 		
+			# 	exit() 
 			return best_move,best_val
+
+	def policy(self,possible_moves,ply):
+		print("Applying policy")
+		value = []
+		for move in possible_moves:
+			self.board[move[0]][move[1]] = 'x' if ply == 1 else 'o'
+
+			value.append()
+			self.board[move[0]][move[1]] = '-'
+
+
+		return possible_moves
+

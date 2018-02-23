@@ -5,10 +5,9 @@ import time
 import copy
 	
 import numpy as np
-from team25_minmax_numpy import Team25_minimax_numpy
-from team25_minmax import Team25_minimax
 from team25_minmax_monte_carlo import Team25_minimax_monte_carlo
-
+from team25_minimax import Team25_minimax
+from team25_minimax_time_variable import Team25_minimax_time_variable
 TIME = 16
 MAX_PTS = 68
 # N = 4
@@ -421,15 +420,15 @@ if __name__ == '__main__':
 	saitama2 = ''
 	option = sys.argv[1]	
 	if option == '1':
-		saitama1 = Team25_minimax_monte_carlo('x',6)
-		saitama2 = Team25_minimax('o',150)
+		saitama1 = Team25_minimax('x',8)
+		saitama2 = Team25_minimax_monte_carlo('o',8)
 	elif option == '2':
-		saitama1 = Team25_minimax('x',200)
-		saitama2 = RandomPlayer('o')
+		saitama1 = Team25_minimax_time_variable('x',8)
+		saitama2 = Team25_minimax_monte_carlo('o',8)
 
 	elif option == '3':
-		saitama1 = Team25_minimax_monte_carlo('x',6)
-		saitama2 = RandomPlayer('o')
+		saitama1 = Team25_minimax_time_variable('x',8)
+		saitama2 = Team25_minimax('o',8)
 
 	elif option == '4':
 		saitama1 = Manual_Player()
@@ -443,3 +442,5 @@ if __name__ == '__main__':
 	
 	print "Player 1 points:", x[0] 
 	print "Player 2 points:", x[1]
+
+	print('No eval board')
