@@ -11,6 +11,8 @@ MAX_PTS = 68
 from team25_minimax_old import Team25_minimax_old
 from team25_minimax import Team25_minimax
 from team25_minimax_time_variable import Team25_minimax_time_variable
+from team25 import Team25
+from team71 import Team71
 class TimedOutExc(Exception):
 	pass
 
@@ -226,6 +228,7 @@ def player_turn(game_board, old_move, obj, ply, opp, flg):
 			WINNER = opp
 			MESSAGE = 'INVALID MOVE'
 			pts[opp] = MAX_PTS
+			print(p_move)
 			return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], True, False
 
 		status = game_board.find_terminal_state()		#find if the game has ended and if yes, find the winner
@@ -263,7 +266,7 @@ def gameplay(obj1, obj2):				#game simulator
 			break
 
 		old_move = p1_move
-		# game_board.print_board()
+		game_board.print_board()
 
 		if block_won:
 			p1_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won = player_turn(game_board, old_move, obj1, "P1", "P2", fl1)
@@ -280,7 +283,7 @@ def gameplay(obj1, obj2):				#game simulator
 		if to_break:
 			break
 
-		# game_board.print_board()
+		game_board.print_board()
 		old_move = p2_move
 
 		if block_won:
@@ -363,15 +366,15 @@ if __name__ == '__main__':
 		obj2 = Team25_minimax()
 
 	elif option == '2':
-		obj1 = Team25_minimax(64)
-		obj2 = Team25_minimax_old(48)
+		obj1 = Team25()
+		obj2 = Team71()
 	elif option == '3':
 		obj1 = Manual_Player()
 		obj2 = Manual_Player()
 
 	elif option == '4':
 		obj1 = Team25_minimax_old(48)
-		obj2 = Team25_minimax(64)
+		obj2 = Team25()
 
 	elif option == '5':
 		obj1 = Team25_minimax_monte_carlo()
