@@ -9,7 +9,7 @@ class Team25():
 
 		self.INFINITY = 1e10
 		self.termVal = self.INFINITY
-		self.timeLimit = datetime.timedelta(seconds = 15.5)
+		self.timeLimit = datetime.timedelta(seconds = 15)
 		self.depth = 5
 		self.weight = [4,2,2,4 ,2,3,3,2 ,2,3,3,2, 4,2,2,4]
 		self.ply_value = {'x':1,'o':-1,'-':0,'d':0}
@@ -291,7 +291,7 @@ class Team25():
 
 			sub_val,sub_move = self.minimax(old_move,flag,1, -self.INFINITY, self.INFINITY)
 
-			if(self.depthReach == 0):
+			if self.depthReach == 0 or datetime.datetime.utcnow() - self.begin >= self.timeLimit:
 				move = sub_move
 			else:
 				break
