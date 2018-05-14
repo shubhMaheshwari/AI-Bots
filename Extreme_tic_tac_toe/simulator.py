@@ -8,9 +8,8 @@ import traceback
 TIME = 16
 MAX_PTS = 68
 
-from team25_minimax_no_eval import Team25_minimax_no_eval
-from team25_minimax import Team25_minimax
-from team25_minimax_time_variable import Team25_minimax_time_variable
+from team25 import Team25
+from deep_ayush import TeamDA
 class TimedOutExc(Exception):
 	pass
 
@@ -226,6 +225,7 @@ def player_turn(game_board, old_move, obj, ply, opp, flg):
 			WINNER = opp
 			MESSAGE = 'INVALID MOVE'
 			pts[opp] = MAX_PTS
+			print(p_move)
 			return p_move, WINNER, MESSAGE, pts["P1"], pts["P2"], True, False
 
 		status = game_board.find_terminal_state()		#find if the game has ended and if yes, find the winner
@@ -263,7 +263,7 @@ def gameplay(obj1, obj2):				#game simulator
 			break
 
 		old_move = p1_move
-		# game_board.print_board()
+		game_board.print_board()
 
 		if block_won:
 			p1_move, WINNER, MESSAGE, pts1, pts2, to_break, block_won = player_turn(game_board, old_move, obj1, "P1", "P2", fl1)
@@ -280,7 +280,7 @@ def gameplay(obj1, obj2):				#game simulator
 		if to_break:
 			break
 
-		# game_board.print_board()
+		game_board.print_board()
 		old_move = p2_move
 
 		if block_won:
@@ -360,23 +360,23 @@ if __name__ == '__main__':
 	option = sys.argv[1]	
 	if option == '1':
 		obj1 = Random_Player()
-		obj2 = Team25_minimax()
+		obj2 = Team25()
 
 	elif option == '2':
-		obj1 = Team25_minimax(64)
-		obj2 = Team25_minimax_time_variable()
+		obj1 = Team25()
+		obj2 = Random_Player()
+
 	elif option == '3':
 		obj1 = Manual_Player()
 		obj2 = Manual_Player()
 
 	elif option == '4':
-		obj1 = Team25_minimax_time_variable()
-		obj2 = Team25_minimax(64)
+		obj1 = Team25()
+		obj2 = TeamDA()
 
 	elif option == '5':
-		obj1 = Team25_minimax_monte_carlo()
-		obj2 = Random_Player()	
-
+		obj1 = TeamDA()
+		obj2 = Team25()	
 
 	else:
 		print 'Invalid option'

@@ -1,9 +1,13 @@
+# This is code of Deepanshu Jain and Ayush Deva for Ultimate Tic-Tac-Toe for their years tournament
+# It has been modified for Extreme tic-tac-toe
+
+
 from __future__ import print_function
 import copy
 import random
 import datetime
 
-class Team25():
+class TeamDA():
 
 	def __init__(self):
 
